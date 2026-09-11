@@ -1,0 +1,12 @@
+.worktrees/
+.env
+node_modules/
+__pycache__/
+*.pyc
+frontend/dist/
+.venv/
+.pytest_cache/
+docker-compose.override.yml
+.idea/
+.DS_Store
+frontend/public/sounds/*.mp3
