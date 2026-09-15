@@ -1,0 +1,138 @@
+# Auto-deploy regenwormen to Namecheap (cPanel shared hosting) on every push
+# to main. Mirrors the proven pattern used for the darchi.dev deploy: git
+# pull + scp + password auth over SSH, not rsync/SFTP/SSH keys, because on
+# this Namecheap account the plain SFTP subsystem rejects auth even though
+# `ssh` logs in fine, and rsync's availability on the shared host is
+# unconfirmed.
+#
+# What this does, in order:
+#   1. Rejects the deploy outright if the backend code doesn't even import
+#      cleanly, so a broken commit never reaches the live server.
+#   2. Builds the React app here in CI - the shared host has no confirmed
+#      Node.js, so frontend/dist (gitignored) never has to be built there;
+#      it's built here and shipped as plain static files.
+#   3. SSHes in and runs `git pull` directly in the existing repo checkout.
+#      This also brings backend/passenger_wsgi.py and any requirements.txt
+#      changes along for free, since they're tracked in git.
+#   4. Installs backend dependencies on the server inside the cPanel-managed
+#      virtualenv (git pull alone doesn't do this).
+#   5. SCPs the freshly built frontend/dist into the static docroot in one
+#      transfer (appleboy/scp-action tars+extracts server-side over the
+#      normal SSH exec channel, same as the darchi deploy).
+#   6. Touches tmp/restart.txt over SSH, which is Passenger's standard
+#      "reload the app on the next request" signal.
+#
+# Required repo secrets (Settings -> Secrets and variables -> Actions):
+#   CPANEL_HOST           - your SSH hostname, e.g. premium90.web-hosting.com
+#   CPANEL_USERNAME       - your cPanel account username
+#   CPANEL_SSH_PORT       - SSH port for your account (do not assume 22 -
+#                           confirmed 21098 for the darchi.dev account on
+#                           this same host; verify for this account too)
+#   CPANEL_SFTP_PASSWORD  - your cPanel account password (same login works
+#                           for SSH; named for parity with the darchi deploy)
+#   CPANEL_REPO_PATH      - absolute path to the git checkout on the server,
+#                           e.g. /home/<user>/repositories/regenwormen
+#   CPANEL_APP_ROOT       - absolute path to the Passenger app root (the
+#                           directory containing passenger_wsgi.py, i.e.
+#                           CPANEL_REPO_PATH/backend in this repo's layout)
+#   CPANEL_VENV_ACTIVATE  - absolute path to the cPanel-generated virtualenv
+#                           activate script for the Python App, e.g.
+#                           /home/<user>/virtualenv/repositories/regenwormen/backend/3.12/bin/activate
+#                           (check the "Setup Python App" page for the exact
+#                           path - it's shown there under "Enter to the
+#                           virtual environment")
+#   FRONTEND_REMOTE_PATH  - absolute path to where static files are served,
+#                           e.g. /home/<user>/public_html
+
+name: Deploy to Namecheap
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reject the deploy outright on a Python syntax error
+        run: python3 -m py_compile $(git ls-files 'backend/*.py')
+
+      - name: Smoke-test that the backend actually imports
+        working-directory: backend
+        env:
+          MYSQL_HOST: localhost
+          MYSQL_DATABASE: ci_smoke_test
+          MYSQL_USER: ci
+          MYSQL_PASSWORD: ci-smoke-test-only
+          JWT_SECRET_KEY: ci-smoke-test-only
+        run: |
+          pip install -r requirements.txt -q
+          python3 -c "from app import create_app; create_app()"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend for production
+        working-directory: frontend
+        run: npm run build
+
+      - name: Pull latest main on the server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.CPANEL_HOST }}
+          username: ${{ secrets.CPANEL_USERNAME }}
+          password: ${{ secrets.CPANEL_SFTP_PASSWORD }}
+          port: ${{ secrets.CPANEL_SSH_PORT }}
+          script: cd ${{ secrets.CPANEL_REPO_PATH }} && git pull
+
+      - name: Install backend dependencies in the cPanel virtualenv
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.CPANEL_HOST }}
+          username: ${{ secrets.CPANEL_USERNAME }}
+          password: ${{ secrets.CPANEL_SFTP_PASSWORD }}
+          port: ${{ secrets.CPANEL_SSH_PORT }}
+          script: |
+            source ${{ secrets.CPANEL_VENV_ACTIVATE }}
+            cd ${{ secrets.CPANEL_APP_ROOT }}
+            pip install -r requirements.txt
+
+      - name: Upload built frontend over SCP (single transfer, not file-by-file)
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.CPANEL_HOST }}
+          username: ${{ secrets.CPANEL_USERNAME }}
+          password: ${{ secrets.CPANEL_SFTP_PASSWORD }}
+          port: ${{ secrets.CPANEL_SSH_PORT }}
+          source: "frontend/dist/*"
+          target: ${{ secrets.FRONTEND_REMOTE_PATH }}
+          strip_components: 2
+          overwrite: true
+
+      - name: Restart the app (Passenger picks this up on the next request)
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.CPANEL_HOST }}
+          username: ${{ secrets.CPANEL_USERNAME }}
+          password: ${{ secrets.CPANEL_SFTP_PASSWORD }}
+          port: ${{ secrets.CPANEL_SSH_PORT }}
+          script: mkdir -p ${{ secrets.CPANEL_APP_ROOT }}/tmp && touch ${{ secrets.CPANEL_APP_ROOT }}/tmp/restart.txt
