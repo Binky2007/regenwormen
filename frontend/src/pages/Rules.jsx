@@ -1,4 +1,6 @@
 // frontend/src/pages/Rules.jsx
+import tilesImg from '../assets/regenwormen-tiles.png'
+
 const h2 = { fontWeight: 900, letterSpacing: '-.015em', fontSize: 24, lineHeight: 1.2, margin: '40px 0 12px', color: '#a8232b' }
 const p = { fontSize: 16, lineHeight: 1.7, color: '#4a473f' }
 
@@ -17,7 +19,7 @@ export default function Rules() {
       <p style={p}>De voorbereiding is zo eenvoudig dat zelfs een regenworm het zou begrijpen. Leg alle zestien tegels netjes op volgorde in het midden van de tafel, met de laagste waarde (21) helemaal links en de hoogste waarde (36) uiterst rechts. Geef de acht dobbelstenen aan de startspeler, et voil&agrave;! Je bent klaar om te wormen.</p>
       <p style={p}>De startspeler is degene die het meest recent een regenworm in het echt heeft gezien. Geen recente wormenwaarnemingen? Dan begint de jongste speler. Klinkt willekeurig, maar dat is precies de sfeer die we zoeken bij dit spel.</p>
       <figure style={{ margin: '26px 0 0' }}>
-        <img src="/regenwormen-tiles.png" alt="Regenwormen" style={{ display: 'block', width: '100%', height: 'auto', borderRadius: 2, border: '1px solid #c9c2b1' }} />
+        <img src={tilesImg} alt="Regenwormen" style={{ display: 'block', width: '100%', height: 'auto', borderRadius: 2, border: '1px solid #c9c2b1' }} />
         <figcaption style={{ fontSize: 12, fontWeight: 600, color: '#6d6961', marginTop: 8 }}>Regenwormen</figcaption>
       </figure>
 

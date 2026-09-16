@@ -19,7 +19,7 @@
 - Docker Compose is dev-friendly only (hot reload both sides) — no production build/nginx/gunicorn in this pass.
 - No frontend unit test suite is added; frontend tasks are verified via `curl` smoke checks (static/skeleton behavior) and precise manual browser steps (interactive/stateful behavior), per the spec.
 - PvP disconnect handling: 30-second grace period, then auto-resign for the disconnected player. No reconnect-and-resume beyond that window.
-- The hero image asset is already saved at `frontend/public/regenwormen-tiles.png` (pulled from the source Claude Design project) — reference it directly, do not re-fetch it.
+- The hero image asset is already saved at `frontend/src/assets/regenwormen-tiles.png` (pulled from the source Claude Design project) — reference it directly, do not re-fetch it.
 
 ---
 

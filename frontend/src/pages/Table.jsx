@@ -6,6 +6,7 @@ import { useSocket } from '../context/SocketContext'
 import { useGame } from '../context/GameContext'
 import { playVictorySound } from '../lib/sound'
 import { Confetti, Dancer } from '../components/Celebration'
+import tableBg from '../assets/table-bg.jpg'
 
 const PIPS = {
   1: [[50, 50]], 2: [[28, 28], [72, 72]], 3: [[26, 26], [50, 50], [74, 74]],
@@ -99,7 +100,7 @@ export default function Table() {
   }
 
   return (
-    <section style={{ flex: '1 1 auto', background: '#a97743', padding: '18px 16px 30px' }}>
+    <section style={{ flex: '1 1 auto', backgroundImage: `url(${tableBg})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', padding: '18px 16px 30px' }}>
       <div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>

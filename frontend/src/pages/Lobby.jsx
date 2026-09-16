@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useSocket } from '../context/SocketContext'
 import { useGame } from '../context/GameContext'
+import tilesImg from '../assets/regenwormen-tiles.png'
+import lobbyBg from '../assets/lobby-bg.jpg'
 
 const primaryBtn = { font: "900 14px 'Archivo', sans-serif", color: '#ffffff', background: '#a8232b', border: 0, borderBottom: '3px solid #7a1a20', borderRadius: 2, padding: '15px 22px', cursor: 'pointer' }
 const secondaryBtn = { font: "900 14px 'Archivo', sans-serif", color: '#1c1a14', background: '#ded7c5', border: '1px solid #b3ab99', borderBottom: '3px solid #8e1c22', borderRadius: 2, padding: '15px 22px', cursor: 'pointer' }
@@ -68,8 +70,9 @@ export default function Lobby() {
   const resumable = gameState && !gameState.result && !pending
 
   return (
-    <section style={{ flex: '1 1 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 28, alignItems: 'center', maxWidth: 1120, width: '100%', margin: '0 auto', padding: '40px 20px 56px' }}>
-      <div>
+    <section style={{ flex: '1 1 auto', backgroundImage: `url(${lobbyBg})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 28, alignItems: 'center', maxWidth: 1120, width: '100%', margin: '0 auto', padding: '40px 20px 56px' }}>
+      <div style={{ background: 'rgba(244,240,230,.88)', borderRadius: 4, padding: '24px 26px' }}>
         <div style={{ fontWeight: 900, fontSize: 12, letterSpacing: '.18em', textTransform: 'uppercase', color: '#a8232b' }}>Two players &middot; eight dice &middot; sixteen tiles</div>
         <h1 style={{ fontWeight: 900, letterSpacing: '-.015em', fontSize: 'clamp(34px, 6vw, 58px)', lineHeight: 1.02, margin: '12px 0 14px', color: '#16150f' }}>Regenwormen in the browser</h1>
         <p style={{ fontSize: 16, lineHeight: 1.6, color: '#4a473f', maxWidth: '46ch', margin: '0 0 26px' }}>Set dice aside, stop in time, and claim the tile that matches your score. Play the bot, or wait for someone online to sit down.</p>
@@ -98,7 +101,8 @@ export default function Lobby() {
         )}
       </div>
       <div style={{ borderRadius: 2, overflow: 'hidden', border: '1px solid #c9c2b1' }}>
-        <img src="/regenwormen-tiles.png" alt="Regenwormen tiles and dice on a table" style={{ display: 'block', width: '100%', height: 'auto' }} />
+        <img src={tilesImg} alt="Regenwormen tiles and dice on a table" style={{ display: 'block', width: '100%', height: 'auto' }} />
+      </div>
       </div>
     </section>
   )
